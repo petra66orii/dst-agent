@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  # Daily Trading Analysis
+  trading-agent:
+    build: ..
+    container_name: dst-trading-agent
+    env_file:
+      - ../deployment/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ../logs:/app/logs
+      - ../data:/app/data
+    restart: unless-stopped
+    command: python src/scheduler.py
+
+  # Discord Bot (always running)
+  discord-bot:
+    build: ..
+    container_name: dst-discord-bot
+    env_file:
+      - ../deployment/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ../logs:/app/logs
+      - ../data:/app/data
+    restart: unless-stopped
+    command: python src/discord_bot.py
+    depends_on:
+      - trading-agent
+
+  # Optional: Web dashboard (future enhancement)
+  # web-dashboard:
+  #   build: .
+  #   container_name: dst-web-dashboard
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   volumes:
+  #     - ./logs:/app/logs
+  #     - ./data:/app/data
+  #   restart: unless-stopped
+  #   command: python -m http.server 8000

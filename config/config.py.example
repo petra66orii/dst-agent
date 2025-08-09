@@ -1,0 +1,10 @@
+# Example configuration using environment variables.
+# Copy or reference these names in your hosting environment or a local .env file.
+
+# Do not commit real secrets. Use .env (ignored) or GitHub Actions / Repository Secrets.
+
+# DISCORD_WEBHOOK_URL=
+# ALPHA_VANTAGE_KEY=
+# OPENAI_API_KEY=
+# SEC_API_KEY=
+# DISCORD_BOT_TOKEN=

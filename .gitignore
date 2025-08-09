@@ -1,0 +1,27 @@
+# Keep config folder but ignore real secrets; allow *.example to be committed
+config/config.py
+!config/config.py.example
+
+# Virtual environments
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Databases
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+
+# OS / Editor
+.DS_Store
+.vscode/
