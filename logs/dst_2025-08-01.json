@@ -1,0 +1,396 @@
+{
+  "agent": "DST",
+  "date": "2025-08-01",
+  "buy": [],
+  "sell": [
+    "TSLA",
+    "KTOS",
+    "BSX"
+  ],
+  "hold": [
+    "MSFT",
+    "NVDA",
+    "AMD",
+    "ASTS",
+    "IBM",
+    "SOUN",
+    "BHAT"
+  ],
+  "signals": [
+    {
+      "ticker": "MSFT",
+      "signal": "Hold",
+      "confidence": "Neutral",
+      "score": 0.18,
+      "price_change_pct": null,
+      "news_analysis": {
+        "summary": "Microsoft stock experienced a 9% increase after beating earnings expectations, with Azure revenue surpassing $75 billion. Analysts are debating whether it is still a wise move to buy MSFT shares, with some recommending it as a top long-term investment.",
+        "sentiment_score": 0.8,
+        "reasoning": "The recent positive earnings report and strong revenue growth in Azure indicate a bullish outlook for Microsoft. Additionally, the recommendation from analysts as a top long-term investment adds to the positive sentiment."
+      },
+      "insider_data": {
+        "ticker": "MSFT",
+        "recent_buys": 0,
+        "recent_sells": 2,
+        "last_activity": "2025-07-15",
+        "notable": [
+          "No notable trades"
+        ]
+      },
+      "insider_analysis": {
+        "summary": "No significant insider activity",
+        "sentiment_score": 0
+      },
+      "fundamentals": {
+        "PE": "39.06",
+        "EPS": "13.66",
+        "MarketCap": "3965596205000",
+        "Sector": "TECHNOLOGY",
+        "ROE": "0.336"
+      }
+    },
+    {
+      "ticker": "NVDA",
+      "signal": "Hold",
+      "confidence": "Neutral",
+      "score": -0.06,
+      "price_change_pct": null,
+      "news_analysis": {
+        "summary": "Recent headlines suggest positive outlook for Nvidia stock with news from Microsoft, Meta Platforms, and Alphabet CEO. There is also a comparison of past performance indicating potential growth.",
+        "sentiment_score": 0.8,
+        "reasoning": "The positive news from major companies and the comparison of past performance indicate a bullish sentiment towards Nvidia stock. Additionally, the fundamentals such as relatively high PE ratio and EPS also support a positive outlook."
+      },
+      "insider_data": {
+        "ticker": "NVDA",
+        "recent_buys": 0,
+        "recent_sells": 106,
+        "last_activity": "2025-07-31",
+        "notable": [
+          "HUANG JEN HSUN (Director, Officer (President and CEO)) - NVDA Sale: 22,617 shares @ $175.91",
+          "HUANG JEN HSUN (Director, Officer (President and CEO)) - NVDA Sale: 23,643 shares @ $176.48",
+          "HUANG JEN HSUN (Director, Officer (President and CEO)) - NVDA Sale: 8,234 shares @ $177.88",
+          "HUANG JEN HSUN (Director, Officer (President and CEO)) - NVDA Sale: 20,062 shares @ $178.65",
+          "HUANG JEN HSUN (Director, Officer (President and CEO)) - NVDA Sale: 444 shares @ $179.30"
+        ]
+      },
+      "insider_analysis": {
+        "summary": "The recent insider trading activity for NVDA shows that HUANG JEN HSUN, the President and CEO, has been consistently selling off shares at various prices.",
+        "sentiment_score": -0.8
+      },
+      "fundamentals": {
+        "PE": "57.56",
+        "EPS": "3.09",
+        "MarketCap": "4337822335000",
+        "Sector": "MANUFACTURING",
+        "ROE": "1.155"
+      }
+    },
+    {
+      "ticker": "TSLA",
+      "signal": "Sell",
+      "confidence": "Low",
+      "score": -0.45,
+      "price_change_pct": null,
+      "news_analysis": {
+        "summary": "Recent news headlines discuss the impact of subsidies on Tesla stock, curtailed options for European buyers, and a favorable risk-reward analysis by a TD Cowen analyst.",
+        "sentiment_score": -0.5,
+        "reasoning": "The news headlines suggest some challenges for Tesla, such as potential impact from subsidies and curtailed options for European buyers. The high PE ratio and relatively low ROE also indicate some overvaluation. However, the favorable risk-reward analysis by the TD Cowen analyst could provide some support for the stock. Overall, the sentiment score is slightly bearish due to the potential challenges mentioned in the news headlines."
+      },
+      "insider_data": {
+        "ticker": "TSLA",
+        "recent_buys": 12,
+        "recent_sells": 53,
+        "last_activity": "2025-07-11",
+        "notable": [
+          "MURDOCH JAMES R (Director) - TSLA Other (M): 90,000 shares @ $17.47",
+          "Taneja Vaibhav (Officer (Chief Financial Officer)) - TSLA Other (M): 4,000 shares @ $18.22",
+          "Taneja Vaibhav (Officer (Chief Financial Officer)) - TSLA Sale: 193 shares @ $289.95",
+          "Taneja Vaibhav (Officer (Chief Financial Officer)) - TSLA Sale: 400 shares @ $291.18",
+          "Taneja Vaibhav (Officer (Chief Financial Officer)) - TSLA Sale: 1,100 shares @ $292.00"
+        ]
+      },
+      "insider_analysis": {
+        "summary": "There have been mixed insider trading activities for TSLA recently, with some officers selling shares while a director purchased a significant amount of shares.",
+        "sentiment_score": 0.2
+      },
+      "fundamentals": {
+        "PE": "185.7",
+        "EPS": "1.66",
+        "MarketCap": "994309439000",
+        "Sector": "MANUFACTURING",
+        "ROE": "0.0818"
+      }
+    },
+    {
+      "ticker": "AMD",
+      "signal": "Hold",
+      "confidence": "Neutral",
+      "score": -0.06,
+      "price_change_pct": null,
+      "news_analysis": {
+        "summary": "Recent headlines suggest varying opinions on the future performance of AMD stock, with price targets ranging from $210 to $330.",
+        "sentiment_score": 0.5,
+        "reasoning": "The news headlines are mixed, but the overall sentiment seems positive with price targets indicating potential growth. Additionally, the fundamentals such as high PE ratio and positive EPS can also be seen as bullish indicators."
+      },
+      "insider_data": {
+        "ticker": "AMD",
+        "recent_buys": 5,
+        "recent_sells": 12,
+        "last_activity": "2025-07-15",
+        "notable": [
+          "Papermaster Mark D (Officer (Chief Technology Officer & EVP)) - AMD Other (M): 17,998 shares @ $19.10",
+          "Papermaster Mark D (Officer (Chief Technology Officer & EVP)) - AMD Sale: 9,949 shares @ $153.86",
+          "Papermaster Mark D (Officer (Chief Technology Officer & EVP)) - AMD Sale: 1,162 shares @ $155.34",
+          "Papermaster Mark D (Officer (Chief Technology Officer & EVP)) - AMD Sale: 5,387 shares @ $156.47",
+          "Papermaster Mark D (Officer (Chief Technology Officer & EVP)) - AMD Sale: 1,500 shares @ $157.35"
+        ]
+      },
+      "insider_analysis": {
+        "summary": "The recent insider trading activity for AMD shows that Officer Mark D Papermaster has been selling a significant amount of shares at various prices.",
+        "sentiment_score": -0.6
+      },
+      "fundamentals": {
+        "PE": "127.76",
+        "EPS": "1.38",
+        "MarketCap": "285869048000",
+        "Sector": "MANUFACTURING",
+        "ROE": "0.039"
+      }
+    },
+    {
+      "ticker": "ASTS",
+      "signal": "Hold",
+      "confidence": "Neutral",
+      "score": 0.15,
+      "price_change_pct": null,
+      "news_analysis": {
+        "summary": "AST SpaceMobile stock has been performing well recently, but dropped on news of a new fundraising program. Despite this drop, the stock is trading slightly higher.",
+        "sentiment_score": -0.5,
+        "reasoning": "The recent drop in stock price due to the new fundraising program may indicate some short-term bearish sentiment. However, the overall performance and trading slightly higher could suggest some resilience in the stock, leading to a neutral sentiment score."
+      },
+      "insider_data": {
+        "ticker": "ASTS",
+        "recent_buys": 10,
+        "recent_sells": 0,
+        "last_activity": "2025-06-24",
+        "notable": [
+          "Cisneros Adriana (Director) - ASTS Grant/Award: 4,810 shares @ $0.00",
+          "SARNOFF RICHARD (Director) - ASTS Grant/Award: 4,810 shares @ $0.00",
+          "Wibergh Johan (Director) - ASTS Grant/Award: 4,810 shares @ $0.00",
+          "RUBIN RONALD L (Director) - ASTS Grant/Award: 4,810 shares @ $0.00",
+          "Torres Julio A. (Director) - ASTS Grant/Award: 4,810 shares @ $0.00"
+        ]
+      },
+      "insider_analysis": {
+        "summary": "Several directors of ASTS recently received grants/awards of 4,810 shares each at $0.00.",
+        "sentiment_score": 0.0
+      },
+      "fundamentals": {
+        "PE": "None",
+        "EPS": "-1.98",
+        "MarketCap": "18494652000",
+        "Sector": "REAL ESTATE & CONSTRUCTION",
+        "ROE": "-1.045"
+      }
+    },
+    {
+      "ticker": "IBM",
+      "signal": "Hold",
+      "confidence": "Neutral",
+      "score": -0.15,
+      "price_change_pct": null,
+      "news_analysis": {
+        "summary": "IBM stock has been downgraded by some analysts, but others remain bullish on the company despite slowing software sales growth.",
+        "sentiment_score": -0.5,
+        "reasoning": "The recent downgrades and concerns about slowing software sales growth suggest a bearish sentiment towards IBM. However, the bullish stance from Bank of America and other analysts could provide some support to the stock."
+      },
+      "insider_data": {
+        "ticker": "IBM",
+        "recent_buys": 2,
+        "recent_sells": 2,
+        "last_activity": "2025-07-01",
+        "notable": [
+          "Robinson Anne (Officer (Senior Vice President)) - IBM Other (M): 8,825 shares @ $0.00",
+          "Robinson Anne (Officer (Senior Vice President)) - IBM Tax Payment: 4,881 shares @ $292.60",
+          "Robinson Anne (Officer (Senior Vice President)) - IBM Other (M): 1,412 shares @ $0.00",
+          "Robinson Anne (Officer (Senior Vice President)) - IBM Tax Payment: 781 shares @ $292.60"
+        ]
+      },
+      "insider_analysis": {
+        "summary": "Robinson Anne, a Senior Vice President at IBM, recently conducted insider trades involving a total of 15,899 shares. These trades included both IBM Other (M) transactions and Tax Payment transactions at a price of $292.60 per share.",
+        "sentiment_score": 0.5
+      },
+      "fundamentals": {
+        "PE": "40.83",
+        "EPS": "6.2",
+        "MarketCap": "235814027000",
+        "Sector": "TECHNOLOGY",
+        "ROE": "0.227"
+      }
+    },
+    {
+      "ticker": "SOUN",
+      "signal": "Hold",
+      "confidence": "Neutral",
+      "score": -0.03,
+      "price_change_pct": null,
+      "news_analysis": {
+        "summary": "Recent headlines discuss SOUN as a potential AI stock for investment portfolios with significant upside potential and the possibility of going parabolic.",
+        "sentiment_score": 0.5,
+        "reasoning": "The recent news headlines suggest a positive outlook for SOUN, indicating potential growth opportunities. However, the negative EPS and ROE raise concerns about the company's financial performance. Overall, the sentiment score is slightly bullish due to the positive news coverage, but caution is advised due to the weak fundamentals."
+      },
+      "insider_data": {
+        "ticker": "SOUN",
+        "recent_buys": 10,
+        "recent_sells": 16,
+        "last_activity": "2025-07-18",
+        "notable": [
+          "ZAGORSEK MICHAEL (Officer (Chief Operating Officer)) - SOUN Other (M): 36,249 shares @ $3.67",
+          "ZAGORSEK MICHAEL (Officer (Chief Operating Officer)) - SOUN Other (M): 74,771 shares @ $2.90",
+          "ZAGORSEK MICHAEL (Officer (Chief Operating Officer)) - SOUN Other (M): 23,152 shares @ $2.18",
+          "SROKA DIANA (Director) - SOUN Sale: 2,800 shares @ $9.94",
+          "MOHAJER KEYVAN (Director, Officer (CEO), 10% Owner) - SOUN Grant/Award: 240,000 shares @ $0.00"
+        ]
+      },
+      "insider_analysis": {
+        "summary": "There have been multiple insider trades for SOUN recently, with the Chief Operating Officer, Michael Zagorsek, buying a total of 134,172 shares at various prices. However, Director Diana Sroka sold 2,800 shares at a higher price. Additionally, CEO Keyvan Mohajer was granted 240,000 shares at no cost.",
+        "sentiment_score": -0.5
+      },
+      "fundamentals": {
+        "PE": "None",
+        "EPS": "-0.61",
+        "MarketCap": "4149912000",
+        "Sector": "REAL ESTATE & CONSTRUCTION",
+        "ROE": "-0.68"
+      }
+    },
+    {
+      "ticker": "BHAT",
+      "signal": "Hold",
+      "confidence": "Neutral",
+      "score": -0.15,
+      "price_change_pct": null,
+      "news_analysis": {
+        "summary": "Blue Hat Interactive has been experiencing turbulence with news of CEO resignation and market coolness affecting its stock price.",
+        "sentiment_score": -0.5,
+        "reasoning": "The negative news of CEO resignation and market coolness impacting the stock price, combined with the poor fundamentals such as negative EPS and ROE, suggest a bearish sentiment for BHAT."
+      },
+      "insider_data": {
+        "ticker": "BHAT",
+        "recent_buys": 0,
+        "recent_sells": 0,
+        "last_activity": "N/A",
+        "notable": [
+          "No insider data available"
+        ]
+      },
+      "insider_analysis": {
+        "summary": "There is no recent insider trading activity available for BHAT.",
+        "sentiment_score": 0.0
+      },
+      "fundamentals": {
+        "PE": "None",
+        "EPS": "-16290",
+        "MarketCap": "12894200",
+        "Sector": "MANUFACTURING",
+        "ROE": "-0.262"
+      }
+    },
+    {
+      "ticker": "KTOS",
+      "signal": "Sell",
+      "confidence": "Low",
+      "score": -0.45,
+      "price_change_pct": null,
+      "news_analysis": {
+        "summary": "Kratos (KTOS) stock has been trading up recently, with an insider selling a significant amount of shares. There are mixed opinions on whether Kratos Defense stock is a buy, sell, or hold for the future.",
+        "sentiment_score": -0.5,
+        "reasoning": "The high PE ratio of 451.54 and low ROE of 0.0144 indicate that the stock may be overvalued and not performing well in terms of return on equity. The insider selling of 7,000 shares could also be seen as a negative signal. However, the recent trading up of the stock could suggest some positive momentum in the short term."
+      },
+      "insider_data": {
+        "ticker": "KTOS",
+        "recent_buys": 1,
+        "recent_sells": 17,
+        "last_activity": "2025-07-28",
+        "notable": [
+          "Fendley Steven S. (Officer (President, US Division)) - KTOS Sale: 5,333 shares @ $58.24",
+          "Fendley Steven S. (Officer (President, US Division)) - KTOS Sale: 1,472 shares @ $59.38",
+          "Mendoza Marie (Officer (SVP & General Counsel)) - KTOS Sale: 1,900 shares @ $50.93",
+          "Carrai Phillip D (Officer (President, STC Division)) - KTOS Sale: 4,920 shares @ $51.29",
+          "Carrai Phillip D (Officer (President, STC Division)) - KTOS Sale: 1,080 shares @ $52.00"
+        ]
+      },
+      "insider_analysis": {
+        "summary": "Multiple officers of KTOS have recently sold shares of the company, indicating a bearish sentiment.",
+        "sentiment_score": -1.0
+      },
+      "fundamentals": {
+        "PE": "451.54",
+        "EPS": "0.13",
+        "MarketCap": "9883788000",
+        "Sector": "MANUFACTURING",
+        "ROE": "0.0144"
+      }
+    },
+    {
+      "ticker": "BSX",
+      "signal": "Sell",
+      "confidence": "Low",
+      "score": -0.27,
+      "price_change_pct": null,
+      "news_analysis": {
+        "summary": "Boston Scientific is experiencing growth in one of its products, and there are discussions about trading with integrated risk controls. However, a director of the company made a significant stock sale.",
+        "sentiment_score": -0.5,
+        "reasoning": "The news about product growth and trading with risk controls could be seen as positive, indicating potential for growth. However, the significant stock sale by a director may raise concerns about insider sentiment or future performance, leading to a slightly bearish sentiment score."
+      },
+      "insider_data": {
+        "ticker": "BSX",
+        "recent_buys": 5,
+        "recent_sells": 9,
+        "last_activity": "2025-07-29",
+        "notable": [
+          "FUJIMORI YOSHIAKI (Director) - BSX Sale: 2,901 shares @ $106.99",
+          "LUDWIG EDWARD J (Director) - BSX Sale: 4,000 shares @ $106.03",
+          "Fitzgerald Joseph Michael (Officer (EVP & Group Pres, Cardiology)) - BSX Other (M): 50,000 shares @ $26.15",
+          "Fitzgerald Joseph Michael (Officer (EVP & Group Pres, Cardiology)) - BSX Sale: 50,000 shares @ $106.97",
+          "Brown Vance R (Officer (SVP, GC and Corp. Secretary)) - BSX Other (M): 4,036 shares @ $0.00"
+        ]
+      },
+      "insider_analysis": {
+        "summary": "There has been significant insider selling activity for BSX, with multiple directors and officers selling shares. One officer also acquired a large number of shares through an option exercise. The overall sentiment based on these trades is bearish.",
+        "sentiment_score": -0.8
+      },
+      "fundamentals": {
+        "PE": "62.45",
+        "EPS": "1.68",
+        "MarketCap": "155223884000",
+        "Sector": "LIFE SCIENCES",
+        "ROE": "0.095"
+      }
+    }
+  ],
+  "news": {
+    "TSLA": [
+      "Trump Won\u2019t Take Away Tesla\u2019s Subsidies. Does That Make TSLA Stock a Safe Buy Here? - Yahoo Finance",
+      "Tesla Stock (NASDAQ:TSLA) Slides as European Tesla Buyers Find Options Curtailed - TipRanks",
+      "Tesla (TSLA) a \u2018Buy\u2019 as Pullback Triggers Favorable Risk-Reward: TD Cowen Analyst - Yahoo Finance"
+    ],
+    "KTOS": [
+      "Kratos (KTOS) Stock Trades Up, Here Is Why - Yahoo Finance",
+      "Insider Selling: Kratos Defense & Security Solutions, Inc. (NASDAQ:KTOS) Insider Sells 7,000 Shares of Stock - MarketBeat",
+      "Is Kratos Defense Stock A Buy, Sell, Or Hold For July 2025? - Barchart.com"
+    ]
+  },
+  "insider_activity": [
+    "MURDOCH JAMES R (Director) - TSLA Other (M): 90,000 shares @ $17.47",
+    "Taneja Vaibhav (Officer (Chief Financial Officer)) - TSLA Other (M): 4,000 shares @ $18.22",
+    "Taneja Vaibhav (Officer (Chief Financial Officer)) - TSLA Sale: 193 shares @ $289.95",
+    "Taneja Vaibhav (Officer (Chief Financial Officer)) - TSLA Sale: 400 shares @ $291.18",
+    "Taneja Vaibhav (Officer (Chief Financial Officer)) - TSLA Sale: 1,100 shares @ $292.00",
+    "Fendley Steven S. (Officer (President, US Division)) - KTOS Sale: 5,333 shares @ $58.24",
+    "Fendley Steven S. (Officer (President, US Division)) - KTOS Sale: 1,472 shares @ $59.38",
+    "Mendoza Marie (Officer (SVP & General Counsel)) - KTOS Sale: 1,900 shares @ $50.93",
+    "Carrai Phillip D (Officer (President, STC Division)) - KTOS Sale: 4,920 shares @ $51.29",
+    "Carrai Phillip D (Officer (President, STC Division)) - KTOS Sale: 1,080 shares @ $52.00"
+  ]
+}
