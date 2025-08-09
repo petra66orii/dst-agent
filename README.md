@@ -119,12 +119,18 @@ ALPHA_VANTAGE_KEY = "your_alpha_vantage_key"
 - Automatic detection and response with buy/hold/sell recommendations
 - Rich embeds with price data, insider activity, and news sentiment
 
+![Trading Bot Analysis](docs/media/bot-analysis.png)
+
 ### Daily Reports:
 
 - Automated analysis of your watchlist
 - Top buy/sell recommendations
 - Market insights and reasoning
 - Delivered via Discord webhook by a daily GitHub Actions run (UTC cron)
+
+![Discord Daily Report](docs/media/report-page1.png)
+![Discord Daily Report](docs/media/report-page2.png)
+![Discord Daily Report](docs/media/report-page3.png)
 
 ## ☁️ Cloud Deployment (Optional)
 
