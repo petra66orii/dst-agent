@@ -1,0 +1,64 @@
+name: Daily Trading Report
+
+on:
+  schedule:
+    # GitHub cron is UTC; adjust as needed for Europe/Dublin
+    - cron: "0 12 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-report
+  cancel-in-progress: false
+
+jobs:
+  run-and-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run daily analysis
+        env:
+          PYTHONUNBUFFERED: "1"
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SEC_API_KEY: ${{ secrets.SEC_API_KEY }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        run: |
+          echo "Starting analysis at $(date -u --iso-8601=seconds) UTC"
+          python src/main.py
+
+      - name: Configure Git user
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit and push logs if changed
+        run: |
+          mkdir -p logs
+          git add logs/
+          if git diff --cached --quiet; then
+            echo "No log changes to commit."
+          else
+            NOW_UTC=$(date -u +%F)
+            git commit -m "chore: daily report ${NOW_UTC}"
+            git push
+          fi

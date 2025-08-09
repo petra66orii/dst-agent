@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install minimal deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Smoke import modules (no network)
+        env:
+          DISCORD_WEBHOOK_URL: dummy
+          ALPHA_VANTAGE_KEY: dummy
+          OPENAI_API_KEY: dummy
+          SEC_API_KEY: dummy
+          DISCORD_BOT_TOKEN: dummy
+        run: |
+          python - <<'PY'
+          import importlib
+          for m in [
+            'src.main', 'src.dst_agent', 'src.insider_scraper', 'src.news_scraper', 'src.send_report'
+          ]:
+              print('Importing', m)
+              importlib.import_module(m)
+          print('OK')
+          PY
