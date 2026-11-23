@@ -1,6 +1,6 @@
-# Keep config folder but ignore real secrets; allow *.example to be committed
-config/config.py
-!config/config.py.example
+# Runtime caches (radar state is persisted via the Actions cache)
+data/radar_state.json
+data/cik_map.json
 
 # Virtual environments
 .venv/
@@ -21,6 +21,7 @@ __pycache__/
 # Environment files
 .env
 .env.*
+!.env.example
 
 # OS / Editor
 .DS_Store

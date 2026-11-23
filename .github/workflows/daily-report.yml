@@ -1,64 +1,42 @@
-name: Daily Trading Report
+name: Daily signals
 
 on:
   schedule:
-    # GitHub cron is UTC; adjust as needed for Europe/Dublin
-    - cron: "0 12 * * *"
+    # 22:15 UTC Mon-Fri = after the US close all year round (21:00 UTC in winter, 20:00 in summer)
+    - cron: "15 22 * * 1-5"
   workflow_dispatch: {}
 
 permissions:
   contents: write
 
 concurrency:
-  group: daily-report
+  group: repo-writes
   cancel-in-progress: false
 
 jobs:
-  run-and-commit:
+  signals:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: "pip"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
+      - run: pip install -r requirements.txt
       - name: Run daily analysis
         env:
           PYTHONUNBUFFERED: "1"
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          ALPHA_VANTAGE_KEY: ${{ secrets.ALPHA_VANTAGE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SEC_API_KEY: ${{ secrets.SEC_API_KEY }}
-          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-        run: |
-          echo "Starting analysis at $(date -u --iso-8601=seconds) UTC"
-          python src/main.py
-
-      - name: Configure Git user
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+        run: python -m src.main
+      - name: Commit log and ledger
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-      - name: Commit and push logs if changed
-        run: |
-          mkdir -p logs
-          git add logs/
-          if git diff --cached --quiet; then
-            echo "No log changes to commit."
-          else
-            NOW_UTC=$(date -u +%F)
-            git commit -m "chore: daily report ${NOW_UTC}"
-            git push
-          fi
+          git add logs/ data/signals.csv
+          if git diff --cached --quiet; then echo "Nothing to commit"; exit 0; fi
+          git commit -m "chore: daily signals $(date -u +%F)"
+          git pull --rebase
+          git push

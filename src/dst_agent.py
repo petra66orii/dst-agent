@@ -1,215 +1,98 @@
+"""Daily signal engine: combines trend, insider and news components into Buy/Hold/Sell."""
+from __future__ import annotations
+
 import json
-import os, sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from datetime import datetime
-from pathlib import Path
-import requests
-from typing import List
-from openai import OpenAI
-from news_scraper import get_stock_news
-from insider_scraper import get_insider_activity, analyze_insider_activity_with_gpt
-from config.config import ALPHA_VANTAGE_KEY, OPENAI_API_KEY
 
-def get_fundamentals(ticker):
-    url = "https://www.alphavantage.co/query"
-    params = {
-        "function": "OVERVIEW",
-        "symbol": ticker,
-        "apikey": ALPHA_VANTAGE_KEY
-    }
-    try:
-        r = requests.get(url, params=params, timeout=10)
-        data = r.json()
-        if "Symbol" in data:
-            return {
-                "PE": data.get("PERatio"),
-                "EPS": data.get("EPS"),
-                "MarketCap": data.get("MarketCapitalization"),
-                "Sector": data.get("Sector"),
-                "ROE": data.get("ReturnOnEquityTTM"),
-            }
-    except Exception as e:
-        print(f"[ERROR] Fundamentals for {ticker}: {e}")
-    return {}
+from src import edgar, llm, market_data
+from src.news_scraper import get_stock_news
+from src.settings import BENCHMARK, DATA_DIR, LOG_DIR
 
-def get_price_change_pct(ticker):
-    url = "https://www.alphavantage.co/query"
-    params = {
-        "function": "TIME_SERIES_DAILY_ADJUSTED",
-        "symbol": ticker,
-        "apikey": ALPHA_VANTAGE_KEY,
-        "outputsize": "compact"
-    }
-    try:
-        r = requests.get(url, params=params, timeout=10)
-        data = r.json().get("Time Series (Daily)", {})
-        if len(data) < 2:
-            return None
-        dates = sorted(data.keys(), reverse=True)
-        last_close = float(data[dates[0]]["4. close"])
-        prev_close = float(data[dates[1]]["4. close"])
-        return ((last_close - prev_close) / prev_close) * 100
-    except Exception as e:
-        print(f"[ERROR] Price data for {ticker}: {e}")
-    return None
-
-WEIGHTS = {
-    "price": 0.4,
-    "news": 0.3,
-    "insider": 0.3
-}
-
-def score_price_change(pct):
-    if pct is None: return 0
-    if pct > 5: return 1.0
-    if pct > 2: return 0.7
-    if pct > 0: return 0.3
-    if pct > -2: return -0.3
-    if pct > -5: return -0.7
-    return -1.0
-
-def analyze_news_with_gpt(ticker: str, headlines: List[str], fundamentals: dict) -> dict:
-    if not OPENAI_API_KEY:
-        return {
-            "summary": "No OpenAI key provided; skipping AI news analysis.",
-            "sentiment_score": 0.0,
-            "reasoning": ""
-        }
-
-    client = OpenAI(api_key=OPENAI_API_KEY)
-
-    fundamentals_str = "\n".join(f"- {k}: {v}" for k, v in fundamentals.items() if v)
-
-    prompt = f"""
-You are a financial analyst AI helping assess the investment outlook of stocks based on recent news and company fundamentals.
-
-Stock: {ticker}
-
-Fundamentals:
-{fundamentals_str or 'N/A'}
-
-Recent News Headlines:
-{chr(10).join(f"- {h}" for h in headlines) or 'No recent headlines'}
-
-Step 1: Briefly summarize the headlines in 2–3 sentences.
-Step 2: Based on both news and fundamentals, give a sentiment score from -1 (bearish) to 1 (bullish), with justification.
-
-Respond in JSON:
-{{
-  "summary": "...",
-  "sentiment_score": 0.0,
-  "reasoning": "..."
-}}
-"""
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.4
-        )
-
-        content = response.choices[0].message.content
-        return json.loads(content)
-    except Exception as e:
-        print(f"[ERROR] GPT news analysis for {ticker}: {e}")
-        return {
-            "summary": "AI analysis failed; using neutral score.",
-            "sentiment_score": 0.0,
-            "reasoning": ""
-        }
+# Trend carries the most weight because it's the only component with a long, robust
+# track record. The scorecard will tell us whether these weights deserve changing.
+WEIGHTS = {"momentum": 0.5, "insider": 0.25, "news": 0.25}
+BUY_AT, SELL_AT = 0.25, -0.25
 
 
-def score_insider_activity(ticker, data):
-    if not data: return 0
-    buys = data.get("recent_buys", 0)
-    sells = data.get("recent_sells", 0)
-    return max(min((buys - sells) / 10, 1), -1)
+def load_tickers() -> list[str]:
+    with open(DATA_DIR / "stocks.json") as f:
+        return [t.upper() for t in json.load(f)]
 
-def load_tickers():
-    with open("data/stocks.json") as f:
-        return json.load(f)
 
-def get_today():
+def get_today() -> str:
     return datetime.now().strftime("%Y-%m-%d")
 
-def analyze_tickers(tickers):
-    buy, sell, hold, signals = [], [], [], []
 
+def classify(score: float) -> tuple[str, str]:
+    if score >= 2 * BUY_AT:
+        return "Buy", "High"
+    if score >= BUY_AT:
+        return "Buy", "Low"
+    if score <= 2 * SELL_AT:
+        return "Sell", "High"
+    if score <= SELL_AT:
+        return "Sell", "Low"
+    return "Hold", "Neutral"
+
+
+def combine(components: dict) -> float:
+    return round(sum(WEIGHTS[k] * components.get(k, 0.0) for k in WEIGHTS), 3)
+
+
+def analyze_tickers(tickers: list[str], closes=None) -> dict:
+    if closes is None:
+        closes = market_data.get_closes(tickers + [BENCHMARK], period="1y")
+    bench = closes[BENCHMARK] if BENCHMARK in closes else None
+
+    signals = []
     for ticker in tickers:
         try:
-            # Get fundamentals once and reuse
-            fundamentals = get_fundamentals(ticker)
-            
-            pct_change = get_price_change_pct(ticker)
-            price_score = score_price_change(pct_change)
+            feats = {}
+            if bench is not None and ticker in closes:
+                feats = market_data.price_features(closes[ticker], bench)
 
-            news = get_stock_news(ticker, limit=3)
-            news_analysis = analyze_news_with_gpt(ticker, news, fundamentals)
-            news_score = news_analysis.get("sentiment_score", 0)
+            news_items = get_stock_news(ticker, limit=8)
+            news = llm.analyse_headlines(ticker, [n["title"] for n in news_items])
 
-            # Get raw insider data first
-            insider_data = get_insider_activity(ticker)
-            
-            # Get insider analysis from GPT if there are notable trades
-            if insider_data and insider_data.get("notable") and insider_data["notable"] != ["No notable trades"]:
-                insider_analysis = analyze_insider_activity_with_gpt(ticker, insider_data["notable"])
-            else:
-                insider_analysis = {"summary": "No significant insider activity", "sentiment_score": 0}
-            
-            insider_score = score_insider_activity(ticker, insider_data)
+            try:
+                insiders = edgar.insider_activity(ticker)
+            except Exception as e:
+                print(f"[insider] {ticker}: {e}")
+                insiders = {"ticker": ticker, "error": str(e)}
 
-            final_score = (
-                WEIGHTS["price"] * price_score +
-                WEIGHTS["news"] * news_score +
-                WEIGHTS["insider"] * insider_score
-            )
-
-            if final_score >= 0.5:
-                buy.append(ticker)
-                signal = "Buy"
-                confidence = "High"
-            elif final_score >= 0.2:
-                buy.append(ticker)
-                signal = "Buy"
-                confidence = "Low"
-            elif final_score <= -0.5:
-                sell.append(ticker)
-                signal = "Sell"
-                confidence = "High"
-            elif final_score <= -0.2:
-                sell.append(ticker)
-                signal = "Sell"
-                confidence = "Low"
-            else:
-                hold.append(ticker)
-                signal = "Hold"
-                confidence = "Neutral"
-
+            components = {
+                "momentum": market_data.score_momentum(feats),
+                "insider": edgar.score_insiders(insiders),
+                "news": news["sentiment_score"],
+            }
+            score = combine(components)
+            signal, confidence = classify(score)
             signals.append({
                 "ticker": ticker,
                 "signal": signal,
                 "confidence": confidence,
-                "score": round(final_score, 3),
-                "price_change_pct": round(pct_change, 2) if pct_change is not None else None,
-                "news_analysis": news_analysis,
-                "insider_data": insider_data,
-                "insider_analysis": insider_analysis,
-                "fundamentals": fundamentals
+                "score": score,
+                "components": components,
+                "price": feats,
+                "news": news,
+                "headlines": news_items[:3],
+                "insiders": insiders,
             })
-
         except Exception as e:
-            print(f"Error processing {ticker}: {e}")
-            continue
+            print(f"[signal] {ticker}: {e}")
 
+    signals.sort(key=lambda s: s["score"], reverse=True)
     return {
-        "buy": buy,
-        "sell": sell,
-        "hold": hold,
-        "signals": signals
+        "buy": [s["ticker"] for s in signals if s["signal"] == "Buy"],
+        "sell": [s["ticker"] for s in signals if s["signal"] == "Sell"],
+        "hold": [s["ticker"] for s in signals if s["signal"] == "Hold"],
+        "signals": signals,
+        "benchmark": BENCHMARK,
+        "benchmark_close": float(bench.dropna().iloc[-1]) if bench is not None and len(bench.dropna()) else None,
     }
 
-def save_log(report):
-    Path("logs").mkdir(exist_ok=True)
-    with open(f"logs/dst_{get_today()}.json", "w") as f:
-        json.dump(report, f, indent=2)
+
+def save_log(report: dict) -> None:
+    LOG_DIR.mkdir(exist_ok=True)
+    with open(LOG_DIR / f"dst_{report['date']}.json", "w") as f:
+        json.dump(report, f, indent=2, default=str)

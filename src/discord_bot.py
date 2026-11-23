@@ -1,142 +1,72 @@
-import os, sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import asyncio
+from datetime import datetime
 
 import discord
 from discord.ext import commands
-from datetime import datetime
-import re
 
-# Import your existing analysis modules
-from dst_agent import analyze_tickers
-from insider_scraper import get_insider_activity
-from news_scraper import get_stock_news
-from config.config import DISCORD_BOT_TOKEN
+from src.dst_agent import analyze_tickers
+from src.settings import DISCORD_BOT_TOKEN
 
 # Bot setup
 intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix='$', intents=intents)
 
+COLOURS = {"Buy": 0x00ff00, "Sell": 0xff0000, "Hold": 0xffff00}
+
+
 class TradingAnalysisBot:
     def __init__(self):
         self.active_channels = set()
-    
+
     async def analyze_ticker(self, ticker):
-        """Perform comprehensive analysis on a single ticker"""
+        """Run the full signal engine for one ticker (off the event loop)."""
         try:
             print(f"Analyzing {ticker}...")
-            
-            # Run analysis for a single ticker and extract its signal entry
-            analysis_result = analyze_tickers([ticker])
-            if not analysis_result:
+            result = await asyncio.to_thread(analyze_tickers, [ticker.upper()])
+            signal = next((s for s in result.get('signals', []) if s['ticker'] == ticker.upper()), None)
+            if not signal:
                 return None
-            signals = analysis_result.get('signals', [])
-            ticker_data = next((s for s in signals if s.get('ticker') == ticker.upper()), {})
-            
-            # Get additional data
-            insider_data = get_insider_activity(ticker)
-            news_data = get_stock_news(ticker)
-            
-            return {
-                'ticker': ticker.upper(),
-                'price_data': ticker_data,
-                'insider_data': insider_data,
-                'news_data': news_data,
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            }
-            
+            return dict(signal, timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
         except Exception as e:
             print(f"Error analyzing {ticker}: {e}")
             return None
-    
-    def format_analysis_embed(self, analysis):
-        """Format analysis data into a Discord embed"""
-        ticker = analysis['ticker']
-        price_data = analysis['price_data']
-        insider_data = analysis['insider_data']
 
-        # Determine recommendation using the computed score
-        score = price_data.get('score', 0.0)
-        if score >= 0.5:
-            recommendation = "🟢 **BUY**"
-            color = 0x00ff00
-        elif score <= -0.5:
-            recommendation = "🔴 **SELL**"
-            color = 0xff0000
-        else:
-            recommendation = "🟡 **HOLD**"
-            color = 0xffff00
-
+    def format_analysis_embed(self, s):
+        """Format a signal into a Discord embed"""
+        c, p, ins = s['components'], s.get('price') or {}, s.get('insiders') or {}
         embed = discord.Embed(
-            title=f"📈 {ticker} Analysis",
-            description=f"**Recommendation: {recommendation}**",
-            color=color,
-            timestamp=datetime.now()
+            title=f"📈 {s['ticker']} Analysis",
+            description=f"**{s['signal'].upper()}** ({s['confidence']}) · score {s['score']:+.2f}",
+            color=COLOURS.get(s['signal'], 0xffff00),
+            timestamp=datetime.now(),
         )
-
-        # Price & Score
-        current_price = 'N/A'  # Not fetched in current pipeline
-        price_change = price_data.get('price_change_pct', 0) or 0
-        price_emoji = "📈" if price_change > 0 else "📉" if price_change < 0 else "➡️"
+        if p:
+            embed.add_field(
+                name="💰 Price & trend",
+                value=(f"**Close:** ${p['close']}\n**1d:** {p['ret_1d_pct']:+.2f}%\n"
+                       f"**20d:** {p['ret_20d_pct']:+.2f}% ({p['rel_20d_pct']:+.2f}% vs bench)\n"
+                       f"**Above 50/200d MA:** {p['above_ma50']} / {p['above_ma200']}"),
+                inline=True,
+            )
         embed.add_field(
-            name="💰 Price Info",
-            value=(
-                f"**Current:** ${current_price}\n"
-                f"**Change:** {price_emoji} {price_change:.2f}%\n"
-                f"**Score:** {score:.2f}"
-            ),
-            inline=True
+            name="🧮 Components",
+            value=f"Trend {c['momentum']:+.2f}\nInsider {c['insider']:+.2f}\nNews {c['news']:+.2f}",
+            inline=True,
         )
-
-        # Fundamentals summary if available
-        fundamentals = price_data.get('fundamentals', {})
-        if fundamentals:
-            fundamentals_str = ", ".join(
-                f"{k}: {v}" for k, v in fundamentals.items() if v
-            )[:200]
+        if not ins.get('error'):
             embed.add_field(
-                name="🏢 Fundamentals",
-                value=fundamentals_str or "N/A",
-                inline=True
+                name="🔍 Insiders (90d, open market)",
+                value=(f"Buyers: {ins.get('buyers', 0)} (${ins.get('buy_value', 0):,.0f})\n"
+                       f"Discretionary sellers: {ins.get('sellers', 0)} (${ins.get('sell_value', 0):,.0f})"),
+                inline=False,
             )
-
-        # Insider Activity
-        insider_buys = insider_data.get('recent_buys', 0)
-        insider_sells = insider_data.get('recent_sells', 0)
-        insider_emoji = "🟢" if insider_buys > insider_sells else "🔴" if insider_sells > insider_buys else "⚪"
-        embed.add_field(
-            name="🔍 Insider Activity",
-            value=(
-                f"{insider_emoji} Buys: {insider_buys} | Sells: {insider_sells}\n"
-                f"**Last Activity:** {insider_data.get('last_activity', 'N/A')}"
-            ),
-            inline=False
-        )
-
-        # Notable insider trades (limit to 3 for Discord)
-        notable_trades = insider_data.get('notable', [])[:3]
-        if notable_trades and notable_trades[0] != "No notable trades":
-            trades_text = "\n".join(
-                [f"• {trade[:100]}..." if len(trade) > 100 else f"• {trade}" for trade in notable_trades]
-            )
-            embed.add_field(
-                name="📋 Recent Notable Trades",
-                value=trades_text,
-                inline=False
-            )
-
-        # News Sentiment
-        news_analysis = price_data.get('news_analysis', {})
-        news_sentiment = news_analysis.get('sentiment_score')
-        if isinstance(news_sentiment, (int, float)):
-            sentiment_emoji = "🟢" if news_sentiment > 0.1 else "🔴" if news_sentiment < -0.1 else "🟡"
-            embed.add_field(
-                name="📰 News Sentiment",
-                value=f"{sentiment_emoji} Score: {news_sentiment:.2f}",
-                inline=True
-            )
-
-        embed.set_footer(text=f"Analysis generated at {analysis['timestamp']}")
+            if ins.get('notable'):
+                embed.add_field(name="📋 Notable trades",
+                                value="\n".join(f"• {t[:100]}" for t in ins['notable'][:3]), inline=False)
+        if s['news'].get('summary'):
+            embed.add_field(name="📰 News", value=s['news']['summary'][:1000], inline=False)
+        embed.set_footer(text=f"Generated {s['timestamp']} · not financial advice")
         return embed
 
 trading_bot = TradingAnalysisBot()
@@ -257,15 +187,13 @@ async def status_command(ctx):
 
 def run_discord_bot():
     """Run the Discord bot"""
+    if not DISCORD_BOT_TOKEN:
+        print("❌ DISCORD_BOT_TOKEN not set. Add it to your environment or .env file.")
+        return
     try:
         bot.run(DISCORD_BOT_TOKEN)
-    except Exception as e:  
+    except Exception as e:
         print(f"❌ Error running Discord bot: {e}")
-
-    if not DISCORD_BOT_TOKEN:
-        print("❌ DISCORD_BOT_TOKEN not found in config!")
-    print("Please set DISCORD_BOT_TOKEN in your environment or .env file.")
-    return
 
 
 if __name__ == "__main__":

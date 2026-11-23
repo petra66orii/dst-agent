@@ -17,7 +17,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY src/ ./src/
-COPY config/ ./config/
 COPY data/ ./data/
 COPY requirements.txt .
 
@@ -32,4 +31,4 @@ ENV PYTHONPATH=/app
 EXPOSE 8000
 
 # Default command (can be overridden)
-CMD ["python", "src/main.py"]
+CMD ["python", "-m", "src.main"]
