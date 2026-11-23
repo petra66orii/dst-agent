@@ -14,13 +14,14 @@ jobs:
         with:
           python-version: "3.12"
           cache: "pip"
-      - run: pip install -r requirements.txt pytest
+      - run: pip install -r requirements.txt pytest httpx
       - name: Import every module (no network)
         run: |
           python - <<'PY'
           import importlib
           for m in ["src.main", "src.dst_agent", "src.edgar", "src.radar", "src.scorecard",
-                    "src.ledger", "src.llm", "src.market_data", "src.news_scraper", "src.send_report"]:
+                    "src.ledger", "src.llm", "src.market_data", "src.news_scraper", "src.send_report",
+                    "src.tools", "src.risk", "src.agent", "src.mcp_server", "src.discord_bot", "src.server"]:
               importlib.import_module(m)
           print("OK")
           PY

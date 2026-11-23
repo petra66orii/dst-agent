@@ -24,6 +24,29 @@ Score ≥ 0.25 → Buy, ≤ −0.25 → Sell (±0.5 = high confidence).
 
 The weights above are a starting guess. **Use the scorecard to decide what to trust.** Wait until there are 100+ signals over 3+ months, and only think about real money if Buy signals beat QQQ at 20 days after costs. If one input's correlation stays at or below 0, cut its weight.
 
+## Chat agent + connector (`src/server.py`)
+
+One always-on service runs two things:
+
+- **Discord agent**: a Claude agent you can talk to normally. DM it, @mention it, or use the channel(s) in `AGENT_CHANNEL_IDS`. It calls the tools below, cites filings and articles, gives the case for and against, and runs every idea through the risk rules. `$NVDA` still gives a quick signal card; `$reset` clears the conversation.
+- **MCP connector** at `https://<host>/<MCP_SECRET>/mcp` (or `/mcp` with `Authorization: Bearer <MCP_SECRET>`). Add it in Claude → Settings → Connectors → Add custom connector, and Claude in the app can use the same tools.
+
+| Tool | Source |
+|---|---|
+| `get_latest_signals`, `get_signal_history`, `get_scorecard`, `get_watchlist` | the bot's own logs/ledger in this repo |
+| `get_price_summary` | yfinance |
+| `get_recent_filings` (8-K items labelled), `get_insider_activity` (open-market only) | SEC EDGAR |
+| `get_news` | Google News, each headline tagged `verified_source` |
+| `check_trade_idea`, `log_trade_idea`, `get_trade_ideas`, `get_risk_rules` | `src/risk.py` hard rules; ideas saved to `data/agent_ideas.csv` |
+
+**Risk rules (code, not prompts):** max 5% per position, every buy needs a stop within 15%, no stocks under $5 or $300M market cap, no shorting/options/leverage, max 5 new ideas a week. Logging an idea never places an order.
+
+**Deploy on Render:** New → Blueprint → this repo (uses `render.yaml`), then fill in the secrets it asks for. The `starter` plan (~$7/month) keeps the Discord bot online. On `free` the service sleeps after 15 minutes, which is fine for connector-only use but drops the bot.
+
+**Discord setup:** in the Developer Portal, enable *Message Content Intent*. Set `ALLOWED_USER_IDS` to your own user ID (Discord → Settings → Advanced → Developer Mode, then right-click yourself → Copy User ID); the agent ignores everyone else.
+
+**Run locally:** `python -m src.server` (connector on http://localhost:8000/<MCP_SECRET>/mcp, plus the bot if `DISCORD_BOT_TOKEN` is set).
+
 ## Setup
 
 ### GitHub Actions (recommended)
@@ -47,7 +70,7 @@ cp .env.example .env   # fill in values
 python -m src.main       # daily signals
 python -m src.radar      # one radar sweep
 python -m src.scorecard  # scorecard
-python -m src.discord_bot  # interactive bot: type a ticker, or $analyze NVDA
+python -m src.server     # connector + Discord chat agent
 python -m pytest -q      # offline tests
 ```
 
@@ -67,7 +90,13 @@ src/
   scorecard.py    forward-return evaluation
   radar.py        intraday alerts
   send_report.py  Discord formatting/delivery
-  discord_bot.py  interactive bot
+  discord_bot.py  Discord chat agent + $TICKER cards
+  agent.py        Claude tool-use loop
+  tools.py        tools shared by agent and connector
+  risk.py         hard risk rules
+  mcp_server.py   MCP connector (secret-protected)
+  repo_data.py    reads logs/ledger from GitHub, logs ideas
+  server.py       runs connector + bot together
 tests/            offline unit tests
 ```
 

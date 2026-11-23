@@ -1,0 +1,38 @@
+# Render Blueprint: one always-on service running the MCP connector + Discord agent.
+# Scheduled jobs (daily signals, radar, scorecard) stay in GitHub Actions.
+services:
+  - type: web
+    name: dst-agent
+    runtime: python
+    # starter (~$7/month) stays awake, which the Discord bot needs.
+    # Switch to "free" for connector-only use (sleeps after 15 min idle; Discord bot would drop).
+    plan: starter
+    region: frankfurt
+    branch: master
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m src.server
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      - key: MCP_SECRET
+        generateValue: true          # your connector URL is https://<service>.onrender.com/<MCP_SECRET>/mcp
+      - key: DISCORD_BOT_TOKEN
+        sync: false
+      - key: ALLOWED_USER_IDS        # your Discord user ID(s), comma-separated
+        sync: false
+      - key: AGENT_CHANNEL_IDS       # channel(s) where every message goes to the agent
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: AGENT_MODEL
+        value: claude-sonnet-5-5
+      - key: SEC_USER_AGENT
+        sync: false
+      - key: GITHUB_TOKEN            # fine-grained, this repo only, Contents: read & write (for logging ideas)
+        sync: false
+      - key: GITHUB_REPO
+        value: petra66orii/dst-agent
+      - key: GITHUB_BRANCH
+        value: master

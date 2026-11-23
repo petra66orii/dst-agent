@@ -31,6 +31,14 @@ def get_intraday(ticker: str) -> pd.DataFrame:
     return df if df is not None else pd.DataFrame()
 
 
+def get_market_cap(ticker: str) -> float | None:
+    try:
+        cap = _yf().Ticker(ticker).fast_info.get("marketCap")
+        return float(cap) if cap else None
+    except Exception:
+        return None
+
+
 def price_features(series: pd.Series, bench: pd.Series) -> dict:
     """Trend/momentum features for one ticker from daily closes."""
     s = series.dropna()

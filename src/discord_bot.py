@@ -1,11 +1,29 @@
+"""Discord bot: chat with the DST research agent, plus quick $TICKER signal cards.
+
+Talk to it by DM, by @mentioning it, or in any channel listed in AGENT_CHANNEL_IDS.
+Only users in ALLOWED_USER_IDS get agent replies (it costs API credit and can log ideas).
+"""
 import asyncio
+import os
+import re
 from datetime import datetime
 
 import discord
 from discord.ext import commands
 
+from src import agent
 from src.dst_agent import analyze_tickers
+from src.send_report import split_message
 from src.settings import DISCORD_BOT_TOKEN
+
+
+def _ids(name):
+    return {int(x) for x in os.getenv(name, "").replace(" ", "").split(",") if x.isdigit()}
+
+
+ALLOWED_USER_IDS = _ids("ALLOWED_USER_IDS")
+AGENT_CHANNEL_IDS = _ids("AGENT_CHANNEL_IDS")
+TICKER_RE = re.compile(r'^\$([A-Za-z]{1,5})\b')
 
 # Bot setup
 intents = discord.Intents.default()
@@ -86,37 +104,84 @@ async def on_command_error(ctx, error):
     # Log other errors
     print(f"Command error: {error}")
 
+# Conversation memory per channel/thread/DM (in memory; resets when the bot restarts)
+conversations: dict[int, list] = {}
+locks: dict[int, asyncio.Lock] = {}
+
+
+def wants_agent(message) -> bool:
+    if isinstance(message.channel, discord.DMChannel):
+        return True
+    if bot.user and bot.user.mentioned_in(message) and not message.mention_everyone:
+        return True
+    channel_id = message.channel.id
+    parent_id = getattr(message.channel, "parent_id", None)  # threads inside an agent channel
+    return channel_id in AGENT_CHANNEL_IDS or parent_id in AGENT_CHANNEL_IDS
+
+
+async def reply_with_agent(message):
+    if ALLOWED_USER_IDS and message.author.id not in ALLOWED_USER_IDS:
+        return  # silently ignore strangers
+    if not ALLOWED_USER_IDS:
+        await message.channel.send("⚠️ ALLOWED_USER_IDS isn't set, so I'm not answering anyone yet.")
+        return
+    text = re.sub(rf"<@!?{bot.user.id}>", "", message.content).strip()
+    if not text:
+        return
+    key = message.channel.id
+    lock = locks.setdefault(key, asyncio.Lock())
+    async with lock:
+        history = agent.trim_history(conversations.get(key, []))
+        history.append({"role": "user", "content": f"{message.author.display_name}: {text}"})
+        used = []
+        async with message.channel.typing():
+            reply, history = await agent.arun(history, on_tool=lambda name, _: used.append(name))
+        conversations[key] = history
+        if used:
+            reply += "\n-# 🔧 " + ", ".join(dict.fromkeys(used))
+        for i, chunk in enumerate(split_message(reply, 1900)):
+            if i == 0:
+                await message.reply(chunk, mention_author=False, suppress_embeds=True)
+            else:
+                await message.channel.send(chunk, suppress_embeds=True)
+
+
 @bot.event
 async def on_message(message):
-    # Don't respond to bot messages
-    if message.author == bot.user:
+    if message.author.bot:
         return
-    
-    # Check for ticker pattern (e.g., $AAPL, $TSLA, $NVDA)
-    ticker_pattern = r'\$([A-Z]{1,5})\b'
-    tickers = re.findall(ticker_pattern, message.content.upper())
-    
-    if tickers:
-        # Limit to 3 tickers per message to avoid spam
-        for ticker in tickers[:3]:
-            try:
-                # Send "typing" indicator
-                async with message.channel.typing():
-                    # Perform analysis
-                    analysis = await trading_bot.analyze_ticker(ticker)
-                    
-                    if analysis:
-                        embed = trading_bot.format_analysis_embed(analysis)
-                        await message.channel.send(embed=embed)
-                    else:
-                        await message.channel.send(f"❌ Could not analyze {ticker}. Please check the ticker symbol.")
-                        
-            except Exception as e:
-                print(f"Error processing ticker {ticker}: {e}")
-                await message.channel.send(f"❌ Error analyzing {ticker}: {str(e)}")
-    
-    # Process other commands
-    await bot.process_commands(message)
+    content = message.content.strip()
+
+    if content.startswith("$"):
+        match = TICKER_RE.match(content)
+        command_names = {c.name for c in bot.commands}
+        if match and match.group(1).lower() not in command_names:
+            # $NVDA -> quick signal card
+            ticker = match.group(1).upper()
+            async with message.channel.typing():
+                analysis = await trading_bot.analyze_ticker(ticker)
+            if analysis:
+                await message.channel.send(embed=trading_bot.format_analysis_embed(analysis))
+            else:
+                await message.channel.send(f"❌ Could not analyze {ticker}. Please check the ticker symbol.")
+            return
+        await bot.process_commands(message)
+        return
+
+    if wants_agent(message):
+        try:
+            await reply_with_agent(message)
+        except Exception as e:
+            print(f"[agent] {e}")
+            await message.channel.send(f"❌ Agent error: {e}")
+
+
+@bot.command(name='reset')
+async def reset_command(ctx):
+    """Forget the conversation in this channel"""
+    conversations.pop(ctx.channel.id, None)
+    await ctx.send("🧹 Conversation cleared.")
+
 
 @bot.command(name='analyze')
 async def analyze_command(ctx, ticker: str):
@@ -144,17 +209,23 @@ async def guide_command(ctx):
     )
     
     embed.add_field(
-        name="💡 How to Use",
-        value="Simply type any ticker with a $ symbol:\n"
-              "• `$AAPL` - Analyze Apple\n"
-              "• `$TSLA` - Analyze Tesla\n"
-              "• `$NVDA` - Analyze NVIDIA",
+        name="💬 Chat with the agent",
+        value="DM me, @mention me, or talk in the agent channel:\n"
+              "• `why is NVDA a buy today?`\n"
+              "• `any 8-Ks or insider buying in AMD this month?`\n"
+              "• `give me a trade idea for MSFT and log it`",
+        inline=False
+    )
+    embed.add_field(
+        name="⚡ Quick signal card",
+        value="Type a ticker with $: `$AAPL`, `$NVDA`",
         inline=False
     )
     
     embed.add_field(
         name="🔧 Commands",
         value="• `$analyze TICKER` - Force analysis of a ticker\n"
+              "• `$reset` - Forget this channel's conversation\n"
               "• `$guide` - Show this help message\n"
               "• `$status` - Check bot status",
         inline=False

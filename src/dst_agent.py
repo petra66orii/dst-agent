@@ -52,7 +52,9 @@ def analyze_tickers(tickers: list[str], closes=None) -> dict:
                 feats = market_data.price_features(closes[ticker], bench)
 
             news_items = get_stock_news(ticker, limit=8)
-            news = llm.analyse_headlines(ticker, [n["title"] for n in news_items])
+            # Only headlines from verified outlets/wire services can move the score.
+            verified = [n["title"] for n in news_items if n.get("verified_source")]
+            news = llm.analyse_headlines(ticker, verified)
 
             try:
                 insiders = edgar.insider_activity(ticker)
