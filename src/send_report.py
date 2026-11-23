@@ -1,120 +1,73 @@
-import os, sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+"""Discord delivery (webhooks) and message formatting."""
+from __future__ import annotations
 
 import requests
-from config.config import DISCORD_WEBHOOK_URL
 
-def send_to_discord(report):
-    try:
-        if not DISCORD_WEBHOOK_URL:
-            print("DISCORD_WEBHOOK_URL not set; skipping Discord delivery.")
-            return
-        lines = [f"📊 **DST Report — {report['date']}**"]
+from src.settings import DISCORD_WEBHOOK_URL
 
-        lines.append(f"\n🟢 **Buy ({len(report['buy'])})**: {', '.join(report['buy']) or 'None'}")
-        lines.append(f"🔴 **Sell ({len(report['sell'])})**: {', '.join(report['sell']) or 'None'}")
-        lines.append(f"🟡 **Hold ({len(report['hold'])})**: {', '.join(report['hold']) or 'None'}")
+MAX_LEN = 1950
 
-        # Add AI Insights Summary
-        ai_insights = []
-        for s in report["signals"]:
-            if s.get("signal") in ["Buy", "Sell"] and s.get("confidence") == "High":
-                news_analysis = s.get("news_analysis", {})
-                if news_analysis and news_analysis.get("summary"):
-                    ai_insights.append(f"**{s['ticker']}**: {news_analysis['summary'][:100]}...")
-        
-        if ai_insights:
-            lines.append("\n🤖 **Key AI Insights:**")
-            for insight in ai_insights[:3]:  # Limit to top 3
-                lines.append(f"• {insight}")
 
-        lines.append("\n---\n**Detailed Analysis:**")
+def split_message(content: str, max_length: int = MAX_LEN) -> list[str]:
+    chunks, current = [], ""
+    for line in content.split("\n"):
+        while len(line) > max_length:  # hard-wrap a single oversized line
+            if current:
+                chunks.append(current)
+                current = ""
+            chunks.append(line[:max_length])
+            line = line[max_length:]
+        if current and len(current) + len(line) + 1 > max_length:
+            chunks.append(current)
+            current = line
+        else:
+            current = f"{current}\n{line}" if current else line
+    if current:
+        chunks.append(current)
+    return chunks
 
-        for s in report["signals"]:
-            fundamentals = s.get("fundamentals", {})
-            fundamentals_str = ", ".join(
-                f"{k}: {v}" for k, v in fundamentals.items() if v
-            )
 
-            lines.append(f"\n🔹 **{s['ticker']}** — {s['signal']} ({s['confidence']})")
-            lines.append(f"• Score: {s['score']} | Δ Price: {s['price_change_pct']}%")
-            
-            if fundamentals_str:
-                lines.append(f"• Fundamentals: {fundamentals_str}")
-                
-            # Add ChatGPT News Analysis
-            news_analysis = s.get("news_analysis", {})
-            if news_analysis and news_analysis.get("summary"):
-                lines.append(f"• 🤖 **News AI**: {news_analysis['summary']} (Score: {news_analysis.get('sentiment_score', 0)})")
-            
-            # Add ChatGPT Insider Analysis  
-            insider_analysis = s.get("insider_analysis", {})
-            if insider_analysis and insider_analysis.get("summary") and "No significant" not in insider_analysis.get("summary", ""):
-                lines.append(f"• 🕵️ **Insider AI**: {insider_analysis['summary']} (Score: {insider_analysis.get('sentiment_score', 0)})")
+def post(content: str, webhook: str | None = None) -> bool:
+    webhook = webhook or DISCORD_WEBHOOK_URL
+    if not webhook:
+        print("[discord] no webhook set; printing instead\n" + content)
+        return False
+    for chunk in split_message(content):
+        r = requests.post(webhook, json={"content": chunk}, timeout=15)
+        if r.status_code not in (200, 204):
+            print(f"[discord] {r.status_code}: {r.text[:200]}")
+            return False
+    return True
 
-        if report.get("insider_activity"):
-            lines.append("\n---\n**Notable Insider/Senator Trades:**")
-            for line in report["insider_activity"]:
-                lines.append(f"🔍 {line}")
 
-        # Join content and split into multiple messages if needed
-        full_content = "\n".join(lines)
-        
-        def split_message(content, max_length=1950):
-            """Split content into chunks that fit Discord's limit"""
-            if len(content) <= max_length:
-                return [content]
-            
-            chunks = []
-            current_chunk = ""
-            
-            for line in content.split('\n'):
-                # If adding this line would exceed the limit
-                if len(current_chunk) + len(line) + 1 > max_length:
-                    if current_chunk:
-                        chunks.append(current_chunk)
-                        current_chunk = line
-                    else:
-                        # Single line is too long, force split
-                        chunks.append(line[:max_length])
-                        current_chunk = line[max_length:]
-                else:
-                    if current_chunk:
-                        current_chunk += "\n" + line
-                    else:
-                        current_chunk = line
-            
-            if current_chunk:
-                chunks.append(current_chunk)
-            
-            return chunks
-        
-        message_chunks = split_message(full_content)
-        
-        # Send each chunk as a separate message
-        for i, chunk in enumerate(message_chunks):
-            if len(message_chunks) > 1:
-                # Add part indicator for multi-part messages
-                header = f"**[Part {i+1}/{len(message_chunks)}]**\n\n" if i > 0 else ""
-                content_to_send = header + chunk
-            else:
-                content_to_send = chunk
-            
-            response = requests.post(
-                DISCORD_WEBHOOK_URL,
-                json={"content": content_to_send},
-                timeout=10
-            )
-            
-            if response.status_code in [200, 204]:
-                if len(message_chunks) > 1:
-                    print(f"Report part {i+1}/{len(message_chunks)} sent to Discord successfully")
-                else:
-                    print("Report sent to Discord successfully")
-            else:
-                print(f"Failed to send report part {i+1}: {response.status_code}")
-                print(f"Response: {response.text}")
-                break  # Stop sending if one fails
+def _fmt_component(v: float) -> str:
+    return f"{v:+.2f}"
 
-    except Exception as e:
-        print(f"Error sending report to Discord: {e}")
+
+def format_daily(report: dict) -> str:
+    lines = [f"📊 **DST Daily — {report['date']}** (benchmark {report.get('benchmark', '')})",
+             f"🟢 Buy: {', '.join(report['buy']) or 'None'}",
+             f"🔴 Sell: {', '.join(report['sell']) or 'None'}",
+             f"🟡 Hold: {', '.join(report['hold']) or 'None'}",
+             "", "**Detail** (score = 0.5×trend + 0.25×insider + 0.25×news)"]
+    for s in report["signals"]:
+        p, c = s.get("price") or {}, s["components"]
+        lines.append(
+            f"\n🔹 **{s['ticker']}** {s['signal']} ({s['confidence']}) · score {s['score']:+.2f}"
+            f"\n• trend {_fmt_component(c['momentum'])} | insider {_fmt_component(c['insider'])} | news {_fmt_component(c['news'])}"
+        )
+        if p:
+            lines.append(f"• ${p['close']:.2f} · 1d {p['ret_1d_pct']:+.1f}% · 20d {p['ret_20d_pct']:+.1f}% "
+                         f"({p['rel_20d_pct']:+.1f}% vs bench) · vol {p['vol_annual_pct']}%")
+        if s["news"].get("summary"):
+            flag = " ⚡catalyst" if s["news"].get("catalyst") else ""
+            lines.append(f"• 📰{flag} {s['news']['summary']}")
+        for n in (s.get("insiders") or {}).get("notable", [])[:2]:
+            lines.append(f"• 🕵️ {n}")
+    lines.append("\n_Signals are logged and scored against the benchmark every week. Not advice._")
+    return "\n".join(lines)
+
+
+# Backwards-compatible name used by older scripts
+def send_to_discord(report: dict) -> bool:
+    return post(format_daily(report))

@@ -1,35 +1,21 @@
 version: "3.8"
 
 services:
-  # Daily Trading Analysis
-  trading-agent:
-    build: ..
-    container_name: dst-trading-agent
-    env_file:
-      - ../deployment/.env
-    environment:
-      - PYTHONUNBUFFERED=1
-    volumes:
-      - ../logs:/app/logs
-      - ../data:/app/data
-    restart: unless-stopped
-    command: python src/scheduler.py
-
+  # Scheduled jobs (daily signals, hourly radar, weekly scorecard) run in GitHub Actions.
+  # Docker is only needed for the always-on Discord bot.
   # Discord Bot (always running)
   discord-bot:
     build: ..
     container_name: dst-discord-bot
     env_file:
-      - ../deployment/.env
+      - ../.env
     environment:
       - PYTHONUNBUFFERED=1
     volumes:
       - ../logs:/app/logs
       - ../data:/app/data
     restart: unless-stopped
-    command: python src/discord_bot.py
-    depends_on:
-      - trading-agent
+    command: python -m src.discord_bot
 
   # Optional: Web dashboard (future enhancement)
   # web-dashboard:

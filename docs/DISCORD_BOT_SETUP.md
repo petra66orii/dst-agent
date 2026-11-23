@@ -23,11 +23,11 @@
 
    **Note:** Setting it to "Public" doesn't mean others can automatically add your bot - they still need the specific invite link that only you will have.
 
-## Step 2: Add Bot Token to Config
+## Step 2: Add Bot Token to `.env`
 
-1. **Open:** `config/config.py`
-2. **Replace:** `YOUR_DISCORD_BOT_TOKEN_HERE` with your actual bot token
-3. **Save the file**
+1. **Copy:** `cp .env.example .env` (in the repo root)
+2. **Set:** `DISCORD_BOT_TOKEN=` to your bot token
+3. **Save the file** (`.env` is git-ignored)
 
 ## Step 3: Invite Bot to Your Server
 
@@ -56,7 +56,7 @@ pip install discord.py
 ## Step 5: Run the Bot
 
 ```bash
-python discord_bot.py
+python -m src.discord_bot
 ```
 
 ## 🎯 How to Use the Bot
@@ -139,15 +139,10 @@ Each analysis is performed in real-time using:
 
 To keep the bot running continuously:
 
-### Option 1: Local (with scheduler)
+### Option 1: Local
 
 ```bash
-# Create a new batch file: start_discord_bot.bat
-@echo off
-title Discord Trading Bot
-cd /d "c:\Users\Petra\.vscode\vscode_projects\dst-agent"
-python discord_bot.py
-pause
+./scripts/start_discord_bot.sh   # or: python -m src.discord_bot
 ```
 
 ### Option 2: Cloud Hosting
